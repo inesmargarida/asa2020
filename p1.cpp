@@ -22,10 +22,10 @@ void dfs_recur(Student* student, Student* students, vector <Student*> stack, int
     stack.push_back(student);
     student->onStack = 1;
     student->discovery = student->low = time++;
-    //int max_cicle;
     
 
     for (auto &it : student->friends){
+        student->estimated = max(it->estimated, student->estimated);
         if (it->visited == 0){
             it->visited = 1;
             
@@ -34,9 +34,13 @@ void dfs_recur(Student* student, Student* students, vector <Student*> stack, int
         }
         if (it->onStack) 
             student->low = min(student->low, it->low);
+
     }
-    for (int i = stack.size() - 1; i > 0; i--)
+
+    for (int i = stack.size() - 1; i > 0; i--){
         stack[i-1]->estimated = max(stack[i]->estimated, stack[i-1]->estimated);
+    
+    }
 
     if (student->discovery == student->low) {
         Student* q = stack.back();
@@ -61,11 +65,6 @@ void dfs(Student* students, int n_students){
             students[i].visited = 1;
             dfs_recur(&students[i], students, stack, time);
         }
-    }
-
-    for(int i = 0; i < n_students; i++) {
-        cout << students[i].estimated;
-        cout << "\n";
     }
     
 }
@@ -116,9 +115,18 @@ int main (){
 */
 
     dfs(students, n_students);
+    for(int i = 0; i < n_students; i++) {
+        students[i].visited = 0;
+        students[i].discovery = 0;
+        students[i].low = 0;
+        students[i].onStack = 0;
+    }
+    dfs(students, n_students);
+
+    for(int i = 0; i < n_students; i++) {
+        cout << students[i].estimated;
+        cout << "\n";
+    }
 
 return 0;
 }
-
-//https://www.geeksforgeeks.org/strongly-connected-components/
-
