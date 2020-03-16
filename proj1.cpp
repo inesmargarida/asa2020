@@ -19,11 +19,10 @@ struct Student
 
 };
 
-void dfs_recur(Student* student, Student* students, vector <Student*> stack, int time) {
+void dfs_recur(Student* student, Student* students, vector <Student*> stack, int* time) {
     stack.push_back(student);
     student->onStack = 1;
-    student->discovery = student->low = time++;  
-
+    student->discovery = student->low = (*time)++;  
 
     for (auto &it : student->friends){
         student->estimated = max(it->estimated, student->estimated);
@@ -52,25 +51,21 @@ void dfs_recur(Student* student, Student* students, vector <Student*> stack, int
     }
 }
 
-void dfs(Student* students, int n_students){
+void dfs(Student* students, int n_students, int* time){
     
     vector <Student*> stack;
-    int time = 0;
+
     for(int i = 0; i < n_students; i++) {
         if(students[i].visited == 0){
             students[i].visited = 1;
             dfs_recur(&students[i], students, stack, time);
         }
     }
-
-    for(int i = 0; i < n_students; i++) 
-    cout << students[i].low;
-cout << "\n";
 }
 
 int main (){
 
-   int n_students, n_friends;
+   int n_students, n_friends, time = 0;
   
     cin >> n_students;
     cin.get();
@@ -100,7 +95,7 @@ int main (){
         students[student_temp - 1].friends.push_back(&students[friend_temp - 1]);
     }
 
-    dfs(students, n_students);
+    dfs(students, n_students, &time);
 
     // associar um maximo a cada low
 
@@ -118,9 +113,6 @@ int main (){
     //for (auto itr = total_lows.begin(); itr != total_lows.cend(); ++itr) { 
     //    cout << itr->first  << '\t' << itr->second << '\n';
     //}
-for(int i = 0; i < n_students; i++) 
-    cout << students[i].low;
-cout << "\n";
     // colocar o maximo em cada estudante com esse low
 
     for(int i = 0; i < n_students; i++) {
