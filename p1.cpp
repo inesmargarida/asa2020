@@ -3,6 +3,7 @@
 #include <list>
 #include <stack>
 #include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -18,37 +19,32 @@ struct Student
 
 };
 
-void dfs_recur(Student* student, Student* students, vector <Student*> stack, int time) {
+void dfs_recur(Student* student, Student* students, vector <Student*> stack, int* time, vector<vector<Student*>> paths) {
     stack.push_back(student);
     student->onStack = 1;
-    student->discovery = student->low = time++;
-    
+    student->discovery = student->low = *time++;    
 
     for (auto &it : student->friends){
         student->estimated = max(it->estimated, student->estimated);
         if (it->visited == 0){
             it->visited = 1;
             
-            dfs_recur(it, students, stack, time);
+            dfs_recur(it, students, stack, time, paths);
             student->low = min(student->low, it->low);
         }
         if (it->onStack) 
             student->low = min(student->low, it->low);
-
-    }
-
-    for (int i = stack.size() - 1; i > 0; i--){
-        stack[i-1]->estimated = max(stack[i]->estimated, stack[i-1]->estimated);
-    
     }
 
     if (student->discovery == student->low) {
         Student* q = stack.back();
         stack.pop_back();
         q->onStack = 0;
+        q->low = student->discovery;
         while (q != student) {
-            q->low = student->discovery;
+            
             q = stack.back();
+            q->low = student->discovery;
             stack.pop_back();
             q->onStack = 0;
         }
@@ -58,14 +54,20 @@ void dfs_recur(Student* student, Student* students, vector <Student*> stack, int
 void dfs(Student* students, int n_students){
     
     vector <Student*> stack;
+    vector<vector<Student*>> paths;
     int time = 0;
+    int* timeptr = &time;
 
     for(int i = 0; i < n_students; i++) {
         if(students[i].visited == 0){
             students[i].visited = 1;
-            dfs_recur(&students[i], students, stack, time);
+            dfs_recur(&students[i], students, stack, timeptr, paths);
         }
     }
+
+    for(auto path : paths)
+        for(int i = path.size() - 1; i > 0; i--)
+            path[i-1]->estimated = max(path[i]->estimated, path[i-1]->estimated);
     
 }
 
@@ -101,27 +103,65 @@ int main (){
         students[student_temp - 1].friends.push_back(&students[friend_temp - 1]);
     }
 
-/* prints friendships with student id [1:n_students]
+    dfs(students, n_students);
+
+    // associar um maximo a cada low
+
+    map<int, int> total_lows;
+
+    for(int i = 0;i  < n_students; i++) 
+        if(total_lows.find(students[i].low) == total_lows.end())
+            total_lows.insert({students[i].low, -1});
+
+    for(int i = 0; i < n_students; i++) {
+        if(total_lows[students[i].low] < students[i].estimated)
+            total_lows[students[i].low] = students[i].estimated;
+    }
+
+    //for (auto itr = total_lows.begin(); itr != total_lows.cend(); ++itr) { 
+    //    cout << itr->first  << '\t' << itr->second << '\n';
+    //}
+
+    // colocar o maximo em cada estudante com esse low
+
+    for(int i = 0; i < n_students; i++) {
+        students[i].estimated = total_lows[students[i].low];
+    }
+
+    // ir as conexoes com outros grupos buscar o maior estimated + atualizar low
 
     for(int i = 0; i < n_students; i++){
-    cout << students[i].id +1;
-            cout << ":";
-        for (auto &it : students[i].friends){
-            cout << " ";
-            cout << it->id +1;
+        vector <int> considered_lows;
+        considered_lows.push_back(students[i].low);
+        for(unsigned j=0; j < students[i].friends.size(); j++){
+            
+            if(find(considered_lows.begin(), considered_lows.end(), students[i].friends[j]->low) != considered_lows.end());
+            else {
+                considered_lows.push_back(students[i].friends[j]->low);
+                students[i].estimated = max(students[i].friends[j]->estimated, students[i].estimated);
+                if(total_lows[students[i].low] < students[i].estimated)
+                    total_lows[students[i].low] = students[i].estimated;
+            }
         }
-        cout << "\n";
+        considered_lows.clear();
     }
-*/
 
-    dfs(students, n_students);
+    // ir aos amiguinhos com mesmo low e igualar novamente o estimated
+
     for(int i = 0; i < n_students; i++) {
-        students[i].visited = 0;
-        students[i].discovery = 0;
-        students[i].low = 0;
-        students[i].onStack = 0;
+        students[i].estimated = total_lows[students[i].low];
     }
-    dfs(students, n_students);
+
+    /*for(int i = 0; i < n_students; i++){
+        vector <int> considered_lows;
+        considered_lows.push_back(students[i].low);
+        for(unsigned j=0; j < students[i].friends.size(); j++){  
+            considered_lows.push_back(students[i].friends[j]->low);
+            students[i].estimated = max(students[i].friends[j]->estimated, students[i].estimated);
+            printf("%d : %d // %u : %d \n", i,students[i].estimated, j,  students[i].friends[j]->estimated );
+        }
+        considered_lows.clear();
+    }*/
 
     for(int i = 0; i < n_students; i++) {
         cout << students[i].estimated;
